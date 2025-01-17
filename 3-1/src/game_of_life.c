@@ -34,38 +34,61 @@ void evolve_serial(Grid* current, Grid* next) {
     }
 }
 
-void update_ghost_rows(Grid* local_current, int rank, int size) {
-    int prev_rank = (rank - 1 + size) % size;
-    int next_rank = (rank + 1) % size;
-    
-    MPI_Request requests[4];
-    MPI_Status statuses[4];
-    
-    // Send/receive ghost rows
-    MPI_Isend(&local_current->cells[local_current->size], local_current->padded_size, 
-              MPI_INT, next_rank, 0, MPI_COMM_WORLD, &requests[0]);
-    MPI_Isend(&local_current->cells[1 * local_current->padded_size], local_current->padded_size, 
-              MPI_INT, prev_rank, 1, MPI_COMM_WORLD, &requests[1]);
-    MPI_Irecv(&local_current->cells[0], local_current->padded_size, 
-              MPI_INT, prev_rank, 0, MPI_COMM_WORLD, &requests[2]);
-    MPI_Irecv(&local_current->cells[(local_current->size + 1) * local_current->padded_size], 
-              local_current->padded_size, MPI_INT, next_rank, 1, MPI_COMM_WORLD, &requests[3]);
-    
-    MPI_Waitall(4, requests, statuses);
-}
-
-void evolve_mpi(Grid* local_current, Grid* local_next, int rank, int size) {
-    update_ghost_rows(local_current, rank, size);
-    
-    for (int i = 1; i <= local_current->size; i++) {
-        for (int j = 1; j <= local_current->size; j++) {
-            int neighbors = count_neighbors(local_current, i, j);
-            int index = i * local_current->padded_size + j;
-            if (local_current->cells[index]) {
-                local_next->cells[index] = (neighbors == 2 || neighbors == 3);
+void evolve_mpi(Grid* current, Grid* next, int local_rows) {
+    for (int i = 1; i <= local_rows; i++) {
+        for (int j = 1; j <= current->size; j++) {
+            int neighbors = count_neighbors_internal(current, i, j);
+            int index = i * current->padded_size + j;
+            
+            if (current->cells[index]) {
+                next->cells[index] = (neighbors == 2 || neighbors == 3) ? 1 : 0;
             } else {
-                local_next->cells[index] = (neighbors == 3);
+                next->cells[index] = (neighbors == 3) ? 1 : 0;
             }
         }
     }
+}
+
+// Update return type to return error status
+int exchange_borders(Grid* grid, int rank, int size) {
+    MPI_Request requests[4];
+    MPI_Status statuses[4];
+    int req_count = 0;
+    int row_size = grid->padded_size;
+    int err = MPI_SUCCESS;
+    
+    // First post all receives, then all sends to avoid deadlock
+    if (rank > 0) {
+        err = MPI_Irecv(&grid->cells[0], row_size, MPI_INT,
+                      rank - 1, 0, MPI_COMM_WORLD,
+                      &requests[req_count++]);
+        if (err != MPI_SUCCESS) return err;
+    }
+    
+    if (rank < size - 1) {
+        err = MPI_Irecv(&grid->cells[(grid->local_rows + 1) * row_size],
+                      row_size, MPI_INT, rank + 1, 1, MPI_COMM_WORLD,
+                      &requests[req_count++]);
+        if (err != MPI_SUCCESS) return err;
+    }
+    
+    if (rank < size - 1) {
+        err = MPI_Isend(&grid->cells[grid->local_rows * row_size], 
+                      row_size, MPI_INT, rank + 1, 0, MPI_COMM_WORLD,
+                      &requests[req_count++]);
+        if (err != MPI_SUCCESS) return err;
+    }
+    
+    if (rank > 0) {
+        err = MPI_Isend(&grid->cells[row_size], row_size, 
+                      MPI_INT, rank - 1, 1, MPI_COMM_WORLD,
+                      &requests[req_count++]);
+        if (err != MPI_SUCCESS) return err;
+    }
+    
+    if (req_count > 0) {
+        err = MPI_Waitall(req_count, requests, statuses);
+    }
+    
+    return err;
 }
