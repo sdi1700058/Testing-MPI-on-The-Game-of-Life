@@ -5,22 +5,20 @@
 
 Parameters parse_arguments(int argc, char* argv[]) {
     Parameters params;
-    if (argc != 5) {
-        printf("Usage: %s <generations> <grid_size> <serial|parallel> <num_threads>\n", argv[0]);
+    if (argc != 3) {
+        printf("Usage: %s <generations> <grid_size>\n", argv[0]);
         exit(1);
     }
     
     params.generations = atoi(argv[1]);
     params.grid_size = atoi(argv[2]);
-    params.is_parallel = strcmp(argv[3], "parallel") == 0;
-    params.num_threads = atoi(argv[4]);
     
     validate_parameters(&params);
     return params;
 }
 
 void validate_parameters(Parameters* params) {
-    if (params->generations <= 0 || params->grid_size <= 0 || params->num_threads <= 0) {
+    if (params->generations <= 0 || params->grid_size <= 0) {
         printf("Error: Invalid parameters\n");
         exit(1);
     }

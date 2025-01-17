@@ -1,0 +1,5 @@
+#__vscode__/
+.history/
+bin/
+build/
+Game-of-Life/
