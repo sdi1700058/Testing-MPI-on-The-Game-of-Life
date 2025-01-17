@@ -6,14 +6,12 @@
 typedef struct {
     int generations;
     int grid_size;
-    int is_parallel;
-    int num_threads;
 } Parameters;
 
 Parameters parse_arguments(int argc, char* argv[]);
-void print_grid(Grid* grid);
-int count_population(Grid* grid);
-void print_stats(Grid* grid, int generation, double time);
 void validate_parameters(Parameters* params);
+void print_grid(Grid* grid);
+void print_stats(Grid* grid, int generation, double time);
+int count_population(Grid* grid);
 
 #endif
