@@ -1,26 +1,29 @@
-CC = mpicc
-CFLAGS = -Wall -O3 -I./include
-SRCDIR = src
-BUILDDIR = build
-BINDIR = bin
+CC=mpicc
+CFLAGS=-Wall -O3
+INCLUDES=-I include
+BUILD_DIR=build
+BIN_DIR=bin
+TARGET=$(BIN_DIR)/game_of_life
 
-SRCS = $(wildcard $(SRCDIR)/*.c)
-OBJS = $(SRCS:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
-TARGET = $(BINDIR)/game_of_life
+SRC=$(wildcard src/*.c)
+OBJ=$(patsubst src/%.c,$(BUILD_DIR)/%.o,$(SRC))
+DEPS=$(wildcard include/*.h)
 
-.PHONY: all clean directories
+all: dirs $(TARGET)
 
-all: directories $(TARGET)
+dirs:
+	@mkdir -p $(BUILD_DIR) $(BIN_DIR)
 
-directories:
-	@mkdir -p $(BUILDDIR)
-	@mkdir -p $(BINDIR)
+$(TARGET): $(OBJ)
+	$(CC) $(OBJ) -o $@
 
-$(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET)
-
-$(BUILDDIR)/%.o: $(SRCDIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
+$(BUILD_DIR)/%.o: src/%.c $(DEPS)
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -rf $(BUILDDIR) $(BINDIR)
+	rm -f $(BUILD_DIR)/*.o $(TARGET) $(BIN_DIR)/*
+
+clean-test:
+	rm -f $ test/fig/* test/results/*
+
+.PHONY: all clean dirs

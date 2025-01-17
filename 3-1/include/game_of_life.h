@@ -3,7 +3,9 @@
 
 #include "grid.h"
 
-void evolve_mpi(Grid* local_current, Grid* local_next, int rank, int size);
+void evolve_serial(Grid* current, Grid* next);
+void evolve_mpi(Grid* current, Grid* next, int local_rows);
+int exchange_borders(Grid* grid, int rank, int size);  // Updated to return int
 int count_neighbors(Grid* grid, int i, int j);
 
 #endif
