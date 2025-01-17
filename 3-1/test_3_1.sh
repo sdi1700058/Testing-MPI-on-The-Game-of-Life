@@ -24,7 +24,7 @@ run_mpi() {
     
     if [ -f "$MACHINES_FILE" ] && [ "$USE_CLUSTER" = "yes" ]; then
         # Distributed run
-        mpiexec -machinefile $MACHINES_FILE -n $procs ./bin/game_of_life $GENERATIONS $size
+        mpiexec -f $MACHINES_FILE -n $procs ./bin/game_of_life $GENERATIONS $size
     else
         # Local run
         mpiexec -n $procs ./bin/game_of_life $GENERATIONS $size
