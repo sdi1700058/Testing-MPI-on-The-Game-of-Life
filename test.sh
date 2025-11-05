@@ -52,7 +52,7 @@ done
 read -p "Do you want to generate plots? (yes/no) " answer
 if [[ $answer == "yes" ]]; then
     if command -v python3 &> /dev/null; then
-        python3 plot_3_1.py
+        python3 plot.py
     else
         echo "Python3 not found, skipping plot generation"
     fi
